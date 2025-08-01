@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Head-to-Head Showdown</title>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            background-color: #2e3a59;
+            border: 4px solid #4a5d8c;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+        
+        .score-display, .timer-display {
+            font-size: 3.5em;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 3px 3px 6px #000000;
+        }
+        .score-display { display: flex; justify-content: center; width: 100%; gap: 60px; padding-top: 25px; }
+        .timer-display { position: absolute; top: 30px; font-size: 2.5em; }
+
+        .game-menu, .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+
+        .menu-title {
+            font-size: 5em;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            text-shadow: 4px 4px 8px #000;
+        }
+
+        .menu-btn {
+            background-color: #ff5722;
+            color: #fff;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.8em;
+            font-weight: bold;
+            border-radius: 12px;
+            margin: 15px;
+            cursor: pointer;
+            pointer-events: all;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover {
+            background-color: #ff7043;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        .menu-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            pointer-events: all;
+            z-index: 10;
+        }
+
+        .mobile-joystick {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .joystick-handle {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        .mobile-buttons {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .mobile-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #03a9f4;
+            color: white;
+            font-size: 2em;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal { display: none; }
+        .modal-content {
+            background-color: #2e3a59;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #4a5d8c;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .modal-title {
+            font-size: 2.8em;
+            color: #ffcc00;
+        }
+        .modal-close {
+            font-size: 3.5em;
+            cursor: pointer;
+            color: #ff5722;
+        }
+
+        .player-select-grid, .shop-items, .leaderboard-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .player-card, .shop-item, .leaderboard-item {
+            background-color: #1a1a2e;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #4a5d8c;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease;
+        }
+        .player-card:hover, .shop-item:hover, .leaderboard-item:hover { transform: translateY(-5px); }
+
+        .player-card.selected { border-color: #ffcc00; }
+
+        .player-image {
+            width: 120px;
+            height: 120px;
+            background-color: #ccc;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background-size: cover;
+            background-position: center;
+            border: 3px solid #fff;
+        }
+        .player-card h3 { font-size: 1.5em; margin: 0 0 10px; }
+        .player-stats {
+            text-align: left;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        .player-stats span { display: block; }
+        
+        .shop-item h3 { font-size: 1.5em; margin: 0 0 10px; }
+        .shop-item button {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s ease;
+        }
+        .shop-item button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        .leaderboard-item { display: flex; justify-content: space-between; align-items: center; font-size: 1.2em; }
+        .leaderboard-list { display: flex; flex-direction: column; }
+        .leaderboard-score { font-weight: bold; color: #ffcc00; }
+
+        .tournament-stage {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .tournament-match {
+            background-color: #1a1a2e;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #4a5d8c;
+        }
+        .match-score { font-size: 1.8em; font-weight: bold; color: #ffcc00; }
+        
+        #game-info {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            font-size: 1.6em;
+            z-index: 5;
+            pointer-events: none;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        #game-info span {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .end-game-message {
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .end-game-details {
+            text-align: center;
+            font-size: 1.5em;
+        }
+        .end-game-details span { color: #03a9f4; font-weight: bold; }
+        
+        #powershot-bar-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #ffcc00;
+            display: none;
+        }
+
+        #powershot-bar {
+            height: 100%;
+            width: 0;
+            background-color: #ffcc00;
+            transition: width 0.1s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .menu-title { font-size: 3em; }
+            .menu-btn { font-size: 1.4em; padding: 12px 25px; }
+            #mobile-controls { display: block; }
+            .score-display, .timer-display { font-size: 2.5em; }
+            .modal-title { font-size: 2.2em; }
+            .modal-close { font-size: 3em; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="ui-overlay">
+            <div id="score-display" class="score-display" style="display: none;">
+                <span id="player-score">0</span>
+                <span id="ai-score">0</span>
+            </div>
+            <div id="timer-display" class="timer-display" style="display: none;">90</div>
+            <div id="powershot-bar-container">
+                <div id="powershot-bar"></div>
+            </div>
+        </div>
+
+        <div id="game-info">
+            <span>Coins: <span id="coins-display">0</span></span>
+        </div>
+
+        <div id="main-menu" class="game-menu">
+            <h1 class="menu-title">Head-to-Head Showdown</h1>
+            <button class="menu-btn" onclick="openPlayerSelect()">Start Match</button>
+            <button class="menu-btn" onclick="openTournament()">Tournament</button>
+            <button class="menu-btn" onclick="openShop()">Shop</button>
+            <button class="menu-btn" onclick="openLeaderboard()">Leaderboard</button>
+        </div>
+
+        <div id="player-select-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Select Player</h2>
+                    <span class="modal-close" onclick="closeModal('player-select')">&times;</span>
+                </div>
+                <div id="player-select-grid" class="player-select-grid"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <h3 id="selected-player-name"></h3>
+                    <button class="menu-btn" onclick="openMatchMenu()">Choose Opponent</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="match-menu" class="game-menu" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Choose Opponent</h2>
+                    <span class="modal-close" onclick="closeModal('match')">&times;</span>
+                </div>
+                <button class="menu-btn" onclick="startGame('easy')">Easy AI</button>
+                <button class="menu-btn" onclick="startGame('medium')">Medium AI</button>
+                <button class="menu-btn" onclick="startGame('hard')">Hard AI</button>
+            </div>
+        </div>
+
+        <div id="shop-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Shop</h2>
+                    <span class="modal-close" onclick="closeModal('shop')">&times;</span>
+                </div>
+                <div id="shop-items" class="shop-items"></div>
+            </div>
+        </div>
+
+        <div id="tournament-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Tournament</h2>
+                    <span class="modal-close" onclick="closeModal('tournament')">&times;</span>
+                </div>
+                <div id="tournament-rounds"></div>
+            </div>
+        </div>
+
+        <div id="leaderboard-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Leaderboard</h2>
+                    <span class="modal-close" onclick="closeModal('leaderboard')">&times;</span>
+                </div>
+                <div id="leaderboard-list" class="leaderboard-list"></div>
+            </div>
+        </div>
+
+        <div id="end-game-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Match Over</h2>
+                </div>
+                <p id="end-game-message" class="end-game-message"></p>
+                <p id="end-game-details" class="end-game-details"></p>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="menu-btn" onclick="returnToMenu()">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-controls">
+            <div class="mobile-joystick">
+                <div class="joystick-handle"></div>
+            </div>
+            <div class="mobile-buttons">
+                <button class="mobile-btn" id="mobile-kick">⚽</button>
+                <button class="mobile-btn" id="mobile-jump">⬆️</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const playerImage = new Image();
+        const aiImage = new Image();
+        const ballImage = new Image();
+        ballImage.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMjAgMCBWNDAgTTQwIDIwIEwwIDIwIiBzdHJva2U9IiNjY2MiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+';
+        
+        let game;
+
+        const GAME_STATE = {
+            MENU: 'menu',
+            PLAYER_SELECT: 'player_select',
+            MATCH_MENU: 'match_menu',
+            PLAYING: 'playing',
+            SHOP: 'shop',
+            TOURNAMENT: 'tournament',
+            LEADERBOARD: 'leaderboard',
+            END_MATCH: 'end_match',
+        };
+
+        const GRAVITY = 0.5;
+        const GROUND_Y = 0.8;
+        const SCREEN_WIDTH = 1200;
+        const SCREEN_HEIGHT = 675;
+
+        const PLAYER_TYPES = [
+            { id: 'all-rounder', name: 'All-Rounder', speed: 8, jump: 15, kick: 12, image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iI2ZmY2MwMCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48cGF0aCBkPSJNNTAsMzAgeDEwIGE2LDYsMCwwLDEgMCwxMiBoLTcgYy03LDAtMTEsLTktOSwtMTUgaC01eiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYifT48cGF0aCBkPSJNNTIsMzIgYzAsMiwtMiwyLC0yLDJ2MTAgcS00LDAtMTAsMCB2LTggYzAsLTUsNSwtMTAsMTAsLTEw eiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNNjQsNDMgbC0xMCwyIGMtMSwyLDIsNCw1LDUgbDEwLC0yIGExMCwxMCwwLDAsMCAtNSwtMTB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0zNSw0MCBjLTEsMCwtMSwxLC0xLDEgaDIwIGwtMTAsLTEweiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMjcsNDMgYy00LDAtNiwtMSwtNiwtMSByLTExLDUtMTAsMTAgYTYsNiwwLDAsMSA4LDYgYzIsMiwyLDIsMiwwIHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PC9zdmc+'},
+            { id: 'jumper', name: 'Jumper', speed: 6, jump: 20, kick: 10, image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iIzAzYTk0ZiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48cGF0aCBkPSJNMzUsMjUgcTAsNSwyMCwwIHYtNSBxLTUsLTUsLTExLC02IGMtNCwtMiwtOSwtMSwtOSw3IHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoMTgwLCA1MCwgNTApIiBkPSJNMzUsMjUgcTAsNSwyMCwwIHYtNSBxLTUsLTUsLTExLC02IGMtNCwtMiwtOSwtMSwtOSw3IHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoOTAsIDUwLCA1MCkiIGQ9Ik0zNSwyNSBxMCw1LDIwLD अगलें vLzUgcS01LC01LC0xMSwtNiBjLTQsLTIsLTksLTEsLTksNyB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjxwYXRoIHRyYW5zZm9ybT0icm90YXRlKDI3MCwgNTAsIDUwKSIgZD0iTTM1LDI1IHEwLDUsMjAsMCB2LTUgcS01LC01LC0xMSwtNiBjLTQsLTIsLTksLTEsLTksNyB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjwvZ3c+PC9zdmc+'},
+            { id: 'striker', name: 'Striker', speed: 10, jump: 12, kick: 18, image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iI2VmNWRmMiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48cGF0aCBkPSJNNTAsMTUgdi01IGExMCwxMCwwLDAsMSAtMTAsLTQgYy02LDAtMTAsNywtMTAsMTAgYTYsNiwwLDAsMSAyMCwzIHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoMTgwLCA1MCwgNTApIiBkPSJNMzUsMjUgcTAsNSwyMCwwIHYtNSBxLTUsLTUsLTExLC02IGMtNCwtMiwtOSwtMSwtOSw3IHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoOTAsIDUwLCA1MCkiIGQ9Ik0zNSwyNSBxMCw1LDIwLD अगलें vLzUgcS01LC01LC0xMSwtNiBjLTQsLTIsLTksLTEsLTksNyB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjxwYXRoIHRyYW5zZm9ybT0icm90YXRlKDI3MCwgNTAsIDUwKSIgZD0iTTM1LDI1IHEwLDUsMjAsMCB2LTUgcS01LC01LC0xMSwtNiBjLTQsLTIsLTksLTEsLTksNyB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjwvZ3c+PC9zdmc+'}
+        ];
+
+        class GameObject {
+            constructor(x, y, width, height, image) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.image = image;
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = false;
+            }
+
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+
+            update(ground) {
+                this.vy += GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.y + this.height > ground) {
+                    this.y = ground - this.height;
+                    this.vy = 0;
+                    this.isGrounded = true;
+                } else {
+                    this.isGrounded = false;
+                }
+            }
+        }
+
+        class Player extends GameObject {
+            constructor(x, y, width, height, image, stats) {
+                super(x, y, width, height, image);
+                this.kickPower = stats.kick;
+                this.jumpPower = stats.jump;
+                this.speed = stats.speed;
+                this.powerShotCharge = 0;
+                this.isChargingPowerShot = false;
+            }
+
+            jump() {
+                if (this.isGrounded) {
+                    this.vy = -this.jumpPower;
+                }
+            }
+            
+            kick(ball, isPowerShot = false) {
+                const distance = Math.hypot(ball.x - (this.x + this.width / 2), ball.y - (this.y + this.height / 2));
+                if (distance < this.width / 2 + ball.width / 2 + 10) {
+                    const angle = Math.atan2(ball.y - (this.y + this.height / 2), ball.x - (this.x + this.width / 2));
+                    let power = isPowerShot ? this.kickPower * 2 : this.kickPower;
+                    ball.vx = Math.cos(angle) * power;
+                    ball.vy = Math.sin(angle) * power - 5;
+                    if (isPowerShot) {
+                        this.powerShotCharge = 0;
+                    }
+                }
+            }
+
+            chargePowerShot() {
+                if (!this.isChargingPowerShot) {
+                    this.isChargingPowerShot = true;
+                    this.powerShotCharge = Math.min(100, this.powerShotCharge + 10);
+                }
+            }
+        }
+        
+        class Ball extends GameObject {
+            constructor(x, y, width, height, image) {
+                super(x, y, width, height, image);
+                this.bounciness = 0.8;
+            }
+            update(ground) {
+                this.vy += GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.y + this.height > ground) {
+                    this.y = ground - this.height;
+                    this.vy *= -this.bounciness;
+                    this.vx *= 0.98;
+                }
+                
+                if (this.x < 0 || this.x + this.width > canvas.width) {
+                    this.vx *= -1;
+                    if (this.x < 0) this.x = 0;
+                    if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+                }
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.state = GAME_STATE.MENU;
+                this.coins = 0;
+                this.playerSkin = 'default';
+                this.selectedPlayerType = PLAYER_TYPES[0];
+                this.difficulty = 'easy';
+                this.playerTeam = 'The Vipers';
+                this.skins = [
+                    { id: 'default', name: 'Default', price: 0, owned: true, image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iI2ZmY2MwMCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48cGF0aCBkPSJNNTAsMzAgeDEwIGE2LDYsMCwwLDEgMCwxMiBoLTcgYy03LDAtMTEsLTktOSwtMTUgaC01eiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYifT48cGF0aCBkPSJNNTIsMzIgYzAsMiwtMiwyLC0yLDJ2MTAgcS00LDAtMTAsMCB2LTggYzAsLTUsNSwtMTAsMTAsLTEw eiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNNjQsNDMgbC0xMCwyIGMtMSwyLDIsNCw1LDUgbDEwLC0yIGExMCwxMCwwLDAsMCAtNSwtMTB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0zNSw0MCBjLTEsMCwtMSwxLC0xLDEgaDIwIGwtMTAsLTEweiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMjcsNDMgYy00LDAtNiwtMSwtNiwtMSByLTExLDUtMTAsMTAgYTYsNiwwLDAsMSA4LDYgYzIsMiwyLDIsMiwwIHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PC9zdmc+'},
+                    { id: 'robot', name: 'Robot', price: 50, owned: false, image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iIzU0NjhlNyIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48cGF0aCBkPSJNNTAsMzAgYy0xNSwwLDE1LDAsLTEwLDIwIGEtMTAsLTksMCwwLDEgMjAsLTIw eiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMzUsNDUgaDMwIGEtNSwtNSwwLDAsMSAwLC01IHYtMTAgYTYsNiwwLDAsMSAtMTAsLTUgYzAtMiwtNSwtMywtMTAsLTMgYTYsNiwwLDAsMSAtMTAsNSB2MTUgeiIgb3BhY2l0eT0iLjgiIGZpbGw9IiNmZmYiLz48L3N2Zz4=' },
+                    { id: 'ninja', name: 'Ninja', price: 100, owned: false, image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iIzMzMzMzMyIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiLz48cGF0aCBkPSJNNTAsMTUgdi01IGExMCwxMCwwLDAsMSAtMTAsLTQgYy02LDAtMTAsNywtMTAsMTAgYTYsNiwwLDAsMSAyMCwzIHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoMTgwLCA1MCwgNTApIiBkPSJNMzUsMjUgcTAsNSwyMCwwIHYtNSBxLTUsLTUsLTExLC02IGMtNCwtMiwtOSwtMSwtOSw3IHoiIG9wYWNpdHk9Ii44IiBmaWxsPSIjZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJyb3RhdGUoOTAsIDUwLCA1MCkiIGQ9Ik0zNSwyNSBxMCw1LDIwLD अगलें vLzUgcS01LC01LC0xMSwtNiBjLTQsLTIsLTksLTEsLTksNyB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjxwYXRoIHRyYW5zZm9ybT0icm90YXRlKDI3MCwgNTAsIDUwKSIgZD0iTTM1LDI1IHEwLDUsMjAsMCB2LTUgcS01LC01LC0xMSwtNiBjLTQsLTIsLTksLTEsLTksNyB6IiBvcGFjaXR5PSIuOCIgZmlsbD0iI2ZmZiIvPjwvZ3c+PC9zdmc+'}
+                ];
+                this.leaderboard = [];
+                this.tournament = {
+                    inProgress: false,
+                    currentRound: 0,
+                    opponents: ['Rookie Bot', 'Pro Bot', 'Champion Bot'],
+                    matchResult: null,
+                };
+                this.loadState();
+            }
+            
+            initGameObjects() {
+                const playerStats = this.selectedPlayerType;
+                this.player = new Player(50, 0, 100, 100, playerImage, {
+                    speed: playerStats.speed,
+                    jump: playerStats.jump,
+                    kick: playerStats.kick,
+                });
+                this.ai = new Player(canvas.width - 150, 0, 100, 100, aiImage, {
+                    speed: 8, jump: 15, kick: 12
+                });
+                this.ball = new Ball(canvas.width / 2 - 20, 0, 40, 40, ballImage);
+                
+                this.playerScore = 0;
+                this.aiScore = 0;
+                this.timer = 90;
+                this.timerInterval = null;
+
+                document.getElementById('score-display').style.display = 'flex';
+                document.getElementById('timer-display').style.display = 'block';
+                document.getElementById('powershot-bar-container').style.display = 'block';
+            }
+
+            startGame(difficulty) {
+                this.initGameObjects();
+                this.difficulty = difficulty;
+                this.state = GAME_STATE.PLAYING;
+                document.getElementById('main-menu').style.opacity = 0;
+                document.getElementById('main-menu').style.pointerEvents = 'none';
+                document.getElementById('match-menu').style.display = 'none';
+                document.getElementById('player-select-modal').style.display = 'none';
+
+                this.timerInterval = setInterval(() => {
+                    this.timer--;
+                    if (this.timer <= 0) {
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+            
+            update() {
+                if (this.state === GAME_STATE.PLAYING) {
+                    const ground = canvas.height * GROUND_Y;
+                    
+                    this.player.update(ground);
+                    this.ai.update(ground);
+                    this.ball.update(ground);
+                    this.checkCollision();
+                    this.aiLogic();
+                    this.checkGoal();
+                    
+                    if (!this.player.isChargingPowerShot) {
+                        this.player.powerShotCharge = Math.min(100, this.player.powerShotCharge + 0.5);
+                    }
+                    document.getElementById('powershot-bar').style.width = `${this.player.powerShotCharge}%`;
+                }
+            }
+
+            draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (this.state !== GAME_STATE.MENU && this.state !== GAME_STATE.PLAYER_SELECT && this.state !== GAME_STATE.MATCH_MENU) {
+                    this.drawArena();
+                    this.ball.draw();
+                    this.player.draw();
+                    this.ai.draw();
+                    document.getElementById('timer-display').textContent = this.timer;
+                }
+            }
+            
+            drawArena() {
+                const groundY = canvas.height * GROUND_Y;
+                ctx.fillStyle = '#2e3a59';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+                
+                ctx.strokeStyle = '#4a5d8c';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, groundY);
+                ctx.lineTo(canvas.width / 2, groundY * 0.9);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffcc00';
+                ctx.fillRect(0, groundY - 100, 20, 100);
+                ctx.fillRect(canvas.width - 20, groundY - 100, 20, 100);
+            }
+
+            checkCollision() {
+                const players = [this.player, this.ai];
+                for (let player of players) {
+                    const dist = Math.hypot(
+                        (player.x + player.width / 2) - (this.ball.x + this.ball.width / 2),
+                        (player.y + player.height / 2) - (this.ball.y + this.ball.height / 2)
+                    );
+                    if (dist < player.width / 2 + this.ball.width / 2) {
+                        const angle = Math.atan2(
+                            (this.ball.y + this.ball.height / 2) - (player.y + player.height / 2),
+                            (this.ball.x + this.ball.width / 2) - (player.x + player.width / 2)
+                        );
+                        this.ball.vx = Math.cos(angle) * (player.kickPower * 1.5);
+                        this.ball.vy = Math.sin(angle) * (player.kickPower * 1.5) - 5;
+                    }
+                }
+            }
+
+            checkGoal() {
+                if (this.ball.x < 20 && this.ball.y + this.ball.height > canvas.height * GROUND_Y - 100) {
+                    this.aiScore++;
+                    this.resetBall();
+                } else if (this.ball.x + this.ball.width > canvas.width - 20 && this.ball.y + this.ball.height > canvas.height * GROUND_Y - 100) {
+                    this.playerScore++;
+                    this.resetBall();
+                }
+                document.getElementById('player-score').textContent = this.playerScore;
+                document.getElementById('ai-score').textContent = this.aiScore;
+            }
+
+            resetBall() {
+                this.ball.x = canvas.width / 2 - 20;
+                this.ball.y = 0;
+                this.ball.vx = 0;
+                this.ball.vy = 0;
+            }
+
+            endGame() {
+                clearInterval(this.timerInterval);
+                this.state = GAME_STATE.END_MATCH;
+
+                const win = this.playerScore > this.aiScore;
+                const earned = win ? 20 : (this.playerScore === this.aiScore) ? 5 : 0;
+                this.coins += earned;
+                
+                document.getElementById('end-game-message').textContent = win ? 'You Win!' : this.playerScore === this.aiScore ? 'Draw!' : 'You Lose!';
+                document.getElementById('end-game-details').textContent = `Final Score: ${this.playerScore} - ${this.aiScore}. You earned ${earned} coins.`;
+                document.getElementById('end-game-modal').style.display = 'flex';
+                
+                if (this.tournament.inProgress) {
+                    if (win) {
+                        this.tournament.currentRound++;
+                        this.tournament.matchResult = 'win';
+                    } else {
+                        this.tournament.matchResult = 'loss';
+                    }
+                    this.saveTournamentState();
+                }
+
+                if (win) {
+                    this.addToLeaderboard(1);
+                }
+
+                this.saveState();
+            }
+
+            returnToMenu() {
+                this.state = GAME_STATE.MENU;
+                document.getElementById('end-game-modal').style.display = 'none';
+                document.getElementById('score-display').style.display = 'none';
+                document.getElementById('timer-display').style.display = 'none';
+                document.getElementById('powershot-bar-container').style.display = 'none';
+                document.getElementById('main-menu').style.opacity = 1;
+                document.getElementById('main-menu').style.pointerEvents = 'all';
+            }
+
+            aiLogic() {
+                let difficultyFactor = 1;
+                if (this.difficulty === 'easy') difficultyFactor = 0.5;
+                if (this.difficulty === 'medium') difficultyFactor = 0.8;
+                
+                const targetX = this.ball.x;
+                const aiCenter = this.ai.x + this.ai.width / 2;
+                
+                // AI Movement
+                const distanceToBall = Math.abs(aiCenter - targetX);
+                if (distanceToBall > 50) {
+                    if (aiCenter > targetX) {
+                        this.ai.vx = -this.ai.speed * difficultyFactor;
+                    } else {
+                        this.ai.vx = this.ai.speed * difficultyFactor;
+                    }
+                } else {
+                    this.ai.vx = 0;
+                }
+                
+                // AI Jump
+                if (this.ball.y < this.ai.y && this.ball.x > this.ai.x - 50 && this.ball.x < this.ai.x + 50) {
+                    if (Math.random() < 0.6 * difficultyFactor) {
+                         this.ai.jump();
+                    }
+                }
+            }
+
+            // Persistence
+            saveState() {
+                localStorage.setItem('game_state', JSON.stringify({
+                    coins: this.coins,
+                    playerSkin: this.playerSkin,
+                    skins: this.skins,
+                    leaderboard: this.leaderboard,
+                    selectedPlayerType: this.selectedPlayerType,
+                }));
+                document.getElementById('coins-display').textContent = this.coins;
+            }
+
+            loadState() {
+                const savedState = localStorage.getItem('game_state');
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    this.coins = state.coins || 0;
+                    this.playerSkin = state.playerSkin || 'default';
+                    this.skins = state.skins || this.skins;
+                    this.leaderboard = state.leaderboard || [];
+                    this.selectedPlayerType = state.selectedPlayerType || PLAYER_TYPES[0];
+                    playerImage.src = this.skins.find(s => s.id === this.playerSkin).image;
+                }
+                document.getElementById('coins-display').textContent = this.coins;
+            }
+
+            addToLeaderboard(wins) {
+                const existing = this.leaderboard.find(entry => entry.name === this.playerTeam);
+                if (existing) {
+                    existing.wins += wins;
+                } else {
+                    this.leaderboard.push({ name: this.playerTeam, wins: wins });
+                }
+                this.leaderboard.sort((a, b) => b.wins - a.wins);
+                this.saveState();
+            }
+        }
+        
+        // --- UI & Modals ---
+        function openPlayerSelect() {
+            game.state = GAME_STATE.PLAYER_SELECT;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('player-select-modal').style.display = 'flex';
+            updatePlayerSelectModal();
+        }
+
+        function updatePlayerSelectModal() {
+            const playerGrid = document.getElementById('player-select-grid');
+            playerGrid.innerHTML = '';
+            PLAYER_TYPES.forEach(playerType => {
+                const card = document.createElement('div');
+                card.className = `player-card ${game.selectedPlayerType.id === playerType.id ? 'selected' : ''}`;
+                card.onclick = () => selectPlayer(playerType.id);
+                card.innerHTML = `
+                    <h3>${playerType.name}</h3>
+                    <div class="player-image" style="background-image: url(${playerType.image})"></div>
+                    <div class="player-stats">
+                        <span>Speed: ${playerType.speed}</span>
+                        <span>Jump: ${playerType.jump}</span>
+                        <span>Kick: ${playerType.kick}</span>
+                    </div>
+                `;
+                playerGrid.appendChild(card);
+            });
+            document.getElementById('selected-player-name').textContent = `Playing as: ${game.selectedPlayerType.name}`;
+        }
+        
+        function selectPlayer(playerId) {
+            game.selectedPlayerType = PLAYER_TYPES.find(p => p.id === playerId);
+            updatePlayerSelectModal();
+        }
+
+        function openMatchMenu() {
+            game.state = GAME_STATE.MATCH_MENU;
+            document.getElementById('player-select-modal').style.display = 'none';
+            document.getElementById('match-menu').style.display = 'flex';
+        }
+
+        function openShop() {
+            game.state = GAME_STATE.SHOP;
+            document.getElementById('main-menu').style.opacity = 0;
+            document.getElementById('main-menu').style.pointerEvents = 'none';
+            document.getElementById('shop-modal').style.display = 'flex';
+            updateShopModal();
+        }
+
+        function updateShopModal() {
+            const shopItems = document.getElementById('shop-items');
+            shopItems.innerHTML = '';
+            game.skins.forEach(skin => {
+                const item = document.createElement('div');
+                item.className = 'shop-item';
+                item.innerHTML = `
+                    <h3>${skin.name}</h3>
+                    <div class="player-image" style="background-image: url(${skin.image})"></div>
+                    <button onclick="buyOrSelectSkin('${skin.id}')" ${skin.owned ? '' : (game.coins < skin.price ? 'disabled' : '')}>
+                        ${skin.owned ? (game.playerSkin === skin.id ? 'Equipped' : 'Equip') : `Buy (${skin.price}💰)`}
+                    </button>
+                `;
+                shopItems.appendChild(item);
+            });
+        }
+        
+        function buyOrSelectSkin(skinId) {
+            const skin = game.skins.find(s => s.id === skinId);
+            if (skin.owned) {
+                game.playerSkin = skinId;
+                playerImage.src = skin.image;
+            } else if (game.coins >= skin.price) {
+                game.coins -= skin.price;
+                skin.owned = true;
+                game.playerSkin = skinId;
+                playerImage.src = skin.image;
+            }
+            game.saveState();
+            updateShopModal();
+        }
+
+        function openTournament() {
+            game.state = GAME_STATE.TOURNAMENT;
+            game.tournament.inProgress = true;
+            document.getElementById('main-menu').style.opacity = 0;
+            document.getElementById('main-menu').style.pointerEvents = 'none';
+            document.getElementById('tournament-modal').style.display = 'flex';
+            loadTournamentState();
+            updateTournamentModal();
+        }
+
+        function saveTournamentState() {
+            localStorage.setItem('tournament_state', JSON.stringify(game.tournament));
+        }
+
+        function loadTournamentState() {
+            const savedState = localStorage.getItem('tournament_state');
+            if (savedState) {
+                game.tournament = JSON.parse(savedState);
+            }
+        }
+
+        function updateTournamentModal() {
+            const roundsDiv = document.getElementById('tournament-rounds');
+            roundsDiv.innerHTML = '';
+
+            if (game.tournament.currentRound >= game.tournament.opponents.length) {
+                roundsDiv.innerHTML = `<div class="tournament-stage"><h3>Tournament Champion!</h3><p>You have won the tournament!</p><button class="menu-btn" onclick="resetTournament()">Start New Tournament</button></div>`;
+            } else {
+                const opponentName = game.tournament.opponents[game.tournament.currentRound];
+                roundsDiv.innerHTML = `
+                    <div class="tournament-stage">
+                        <h3>Round ${game.tournament.currentRound + 1}</h3>
+                        <div class="tournament-match">
+                            <span>${game.playerTeam} vs ${opponentName}</span>
+                            <button class="menu-btn" onclick="startTournamentMatch()">Play</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function resetTournament() {
+            game.tournament.currentRound = 0;
+            game.tournament.matchResult = null;
+            game.tournament.inProgress = false;
+            saveTournamentState();
+            closeModal('tournament');
+        }
+
+        function startTournamentMatch() {
+            closeModal('tournament');
+            startGame('hard'); // Tournament matches are always hard
+        }
+
+        function openLeaderboard() {
+            game.state = GAME_STATE.LEADERBOARD;
+            document.getElementById('main-menu').style.opacity = 0;
+            document.getElementById('main-menu').style.pointerEvents = 'none';
+            document.getElementById('leaderboard-modal').style.display = 'flex';
+            updateLeaderboardModal();
+        }
+
+        function updateLeaderboardModal() {
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+
+            const aiBots = [
+                { name: 'The Dragons', wins: 5 },
+                { name: 'The Wolves', wins: 4 },
+                { name: 'The Titans', wins: 3 },
+            ];
+
+            let combinedLeaderboard = [...game.leaderboard, ...aiBots];
+            combinedLeaderboard.sort((a, b) => b.wins - a.wins);
+
+            combinedLeaderboard.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = 'leaderboard-item';
+                item.innerHTML = `
+                    <span>#${index + 1} ${entry.name}</span>
+                    <span class="leaderboard-score">${entry.wins} Wins</span>
+                `;
+                leaderboardList.appendChild(item);
+            });
+        }
+
+        function closeModal(modalName) {
+            if (modalName === 'shop') { document.getElementById('shop-modal').style.display = 'none'; }
+            else if (modalName === 'tournament') { document.getElementById('tournament-modal').style.display = 'none'; }
+            else if (modalName === 'leaderboard') { document.getElementById('leaderboard-modal').style.display = 'none'; }
+            else if (modalName === 'match') { document.getElementById('match-menu').style.display = 'none'; }
+            else if (modalName === 'player-select') { document.getElementById('player-select-modal').style.display = 'none'; }
+            
+            if (game.state !== GAME_STATE.PLAYING) {
+                game.state = GAME_STATE.MENU;
+                document.getElementById('main-menu').style.display = 'flex';
+                document.getElementById('main-menu').style.opacity = 1;
+                document.getElementById('main-menu').style.pointerEvents = 'all';
+            }
+        }
+        
+        // --- Input Handling ---
+        let keys = {};
+        document.addEventListener('keydown', e => keys[e.key] = true);
+        document.addEventListener('keyup', e => keys[e.key] = false);
+
+        let mobileControls = { left: false, right: false, jump: false, kick: false, powerShot: false };
+        const joystick = document.querySelector('.mobile-joystick');
+        joystick.addEventListener('touchstart', e => {
+            const touch = e.touches[0];
+            const rect = joystick.getBoundingClientRect();
+            const x = touch.clientX - rect.left - rect.width / 2;
+            mobileControls.left = x < -20;
+            mobileControls.right = x > 20;
+        }, { passive: true });
+        joystick.addEventListener('touchmove', e => {
+            const touch = e.touches[0];
+            const rect = joystick.getBoundingClientRect();
+            const x = touch.clientX - rect.left - rect.width / 2;
+            mobileControls.left = x < -20;
+            mobileControls.right = x > 20;
+        }, { passive: true });
+        joystick.addEventListener('touchend', () => {
+            mobileControls.left = false;
+            mobileControls.right = false;
+        });
+        document.getElementById('mobile-jump').addEventListener('touchstart', () => { mobileControls.jump = true; }, { passive: true });
+        document.getElementById('mobile-jump').addEventListener('touchend', () => { mobileControls.jump = false; });
+        document.getElementById('mobile-kick').addEventListener('touchstart', () => { mobileControls.kick = true; }, { passive: true });
+        document.getElementById('mobile-kick').addEventListener('touchend', () => { mobileControls.kick = false; });
+
+        function handleInput() {
+            // Keyboard
+            if (keys['ArrowLeft'] || keys['a']) game.player.vx = -game.player.speed;
+            else if (keys['ArrowRight'] || keys['d']) game.player.vx = game.player.speed;
+            else game.player.vx = 0;
+            
+            if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && game.player.isGrounded) game.player.jump();
+            
+            // Power Shot
+            if (keys['Shift'] && game.player.powerShotCharge >= 100) {
+                game.player.kick(game.ball, true);
+            } else if (keys['Shift']) {
+                game.player.chargePowerShot();
+            } else {
+                game.player.isChargingPowerShot = false;
+                game.player.kick(game.ball, false);
+            }
+
+            // Gamepad
+            const gamepads = navigator.getGamepads();
+            if (gamepads[0]) {
+                const gp = gamepads[0];
+                if (gp.axes[0] < -0.5) game.player.vx = -game.player.speed;
+                else if (gp.axes[0] > 0.5) game.player.vx = game.player.speed;
+                else game.player.vx = 0;
+
+                if (gp.buttons[0].pressed && game.player.isGrounded) game.player.jump();
+                
+                // Power Shot (B button on Xbox)
+                if (gp.buttons[1].pressed && game.player.powerShotCharge >= 100) {
+                    game.player.kick(game.ball, true);
+                } else if (gp.buttons[1].pressed) {
+                    game.player.chargePowerShot();
+                } else {
+                    game.player.isChargingPowerShot = false;
+                    game.player.kick(game.ball, false);
+                }
+            }
+
+            // Mobile
+            if (mobileControls.left) game.player.vx = -game.player.speed;
+            else if (mobileControls.right) game.player.vx = game.player.speed;
+            else game.player.vx = 0;
+
+            if (mobileControls.jump) game.player.jump();
+            if (mobileControls.kick && game.player.powerShotCharge >= 100) {
+                 game.player.kick(game.ball, true);
+            } else if (mobileControls.kick) {
+                game.player.chargePowerShot();
+            } else {
+                game.player.isChargingPowerShot = false;
+                game.player.kick(game.ball, false);
+            }
+        }
+
+        // --- Game Loop ---
+        function loop() {
+            requestAnimationFrame(loop);
+            handleInput();
+            game.update();
+            game.draw();
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.width * (9 / 16);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.onload = () => {
+            resizeCanvas();
+            game = new Game();
+            loop();
+        };
+    </script>
+</body>
+</html>
